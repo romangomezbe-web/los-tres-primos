@@ -142,7 +142,9 @@ router.patch('/:id/cancel', verifyToken, (req, res) => {
   const { cancel_reason } = req.body || {};
   db.prepare("UPDATE orders SET status = 'CANCELLED', cancelled_at = CURRENT_TIMESTAMP, cancel_reason = ? WHERE id = ?")
     .run(cancel_reason || null, req.params.id);
-  const order = buildOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id));
+  const row = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Pedido no encontrado' });
+  const order = buildOrder(row);
   if (io) io.emit('order:cancelled', stripPrices(order));
   res.json(stripPrices(order));
 });
