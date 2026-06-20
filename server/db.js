@@ -6,10 +6,6 @@ const db = new Database(path.join(__dirname, 'pos.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// Add columns added after initial release
-try { db.exec("ALTER TABLE orders ADD COLUMN cancelled_at DATETIME"); } catch {}
-try { db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT"); } catch {}
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,6 +15,8 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     started_at DATETIME,
     completed_at DATETIME,
+    cancelled_at DATETIME,
+    cancel_reason TEXT,
     prep_time_seconds INTEGER,
     total_price REAL NOT NULL
   );
@@ -52,6 +50,10 @@ db.exec(`
     slowest_order_seconds INTEGER
   );
 `);
+
+// Add columns for existing DBs that predate these fields
+try { db.exec("ALTER TABLE orders ADD COLUMN cancelled_at DATETIME"); } catch {}
+try { db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT"); } catch {}
 
 // Seed menu if empty
 const menuCount = db.prepare('SELECT COUNT(*) as cnt FROM menu_items').get();
